@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>MD5 Analyzer Pro</title>
+
+<style>
+
+body{
+font-family:Segoe UI;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+margin:0;
+}
+
+.box{
+background:white;
+padding:30px;
+border-radius:15px;
+width:520px;
+box-shadow:0 15px 40px rgba(0,0,0,0.4);
+animation:fade .6s;
+}
+
+@keyframes fade{
+from{opacity:0;transform:translateY(20px)}
+to{opacity:1}
+}
+
+h2{
+text-align:center;
+margin-bottom:20px;
+}
+
+input{
+width:100%;
+padding:12px;
+border-radius:8px;
+border:1px solid #ccc;
+margin-bottom:10px;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+background:#1976d2;
+color:white;
+border-radius:8px;
+cursor:pointer;
+font-size:16px;
+transition:.2s;
+}
+
+button:hover{
+transform:scale(1.04);
+background:#0d47a1;
+}
+
+.result{
+margin-top:15px;
+background:#f3f5f7;
+padding:15px;
+border-radius:10px;
+}
+
+.history{
+margin-top:10px;
+max-height:130px;
+overflow:auto;
+font-size:14px;
+}
+
+.stat{
+margin-top:10px;
+font-size:14px;
+}
+
+.green{color:green;font-weight:bold}
+.red{color:red;font-weight:bold}
+
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>MD5 Analyzer Pro</h2>
+
+<input id="session" placeholder="Nhập số phiên">
+
+<input id="md5" placeholder="Nhập MD5">
+
+<button onclick="run()">PHÂN TÍCH</button>
+
+<div class="result">
+
+<div><b>Cụm số:</b> <span id="groups"></span></div>
+
+<div><b>Kết quả từng cụm:</b> <span id="sums"></span></div>
+
+<div><b>Công thức:</b> <span id="formula"></span></div>
+
+<div><b>Kết quả cuối:</b> <span id="final"></span></div>
+
+<div><b>Dự đoán Chẵn/Lẻ:</b> <span id="evenodd"></span></div>
+
+<div><b>Dự đoán Tài/Xỉu:</b> <span id="taixiu"></span></div>
+
+<div><b>Dự đoán Version 2.0:</b> <span id="predictv2"></span></div>
+
+<div class="stat">
+<b>Thống kê:</b><br>
+Chẵn: <span id="evenp">0</span>% |
+Lẻ: <span id="oddp">0</span>%<br>
+Tài: <span id="taip">0</span>% |
+Xỉu: <span id="xiup">0</span>%
+</div>
+
+<div class="history" id="history"></div>
+
+</div>
+
+</div>
+
+<script>
+
+let history=[]
+
+function run(){
+
+let md5=document.getElementById("md5").value.toLowerCase()
+
+let groups=[]
+let temp=""
+
+for(let c of md5){
+
+if(!isNaN(c)) temp+=c
+else{
+
+if(temp!="") groups.push(temp)
+temp=""
+
+}
+
+}
+
+if(temp!="") groups.push(temp)
+
+document.getElementById("groups").innerText=groups.join(" | ")
+
+let sums=groups.map(g=>g.split('').reduce((a,b)=>a+Number(b),0))
+
+document.getElementById("sums").innerText=sums.join(" , ")
+
+let result=sums[0]
+let formula=sums[0]
+
+for(let i=1;i<sums.length;i++){
+
+if(i%2==1){
+result-=sums[i]
+formula+=" - "+sums[i]
+}else{
+result+=sums[i]
+formula+=" + "+sums[i]
+}
+
+}
+
+document.getElementById("formula").innerText=formula
+document.getElementById("final").innerText=result
+document.getElementById("predictv2").innerText=predictV2(result)
+
+let evenOddPredict=predictEvenOdd(result)
+let taiXiuPredict=predictTaiXiu(result)
+
+document.getElementById("evenodd").innerHTML=evenOddPredict
+document.getElementById("taixiu").innerHTML=taiXiuPredict
+
+history.push(result)
+
+updateStats()
+
+document.getElementById("history").innerHTML=
+history.slice(-20).map(v=>"KQ: "+v).join("<br>")
+
+}
+
+function predictEvenOdd(n){
+
+if(n<0){
+
+if(Math.abs(n)%2==0) return "<span class='green'>Đánh LẺ</span>"
+else return "<span class='red'>Đánh CHẴN</span>"
+
+}
+
+if(n%2==0) return "<span class='red'>Đánh LẺ</span>"
+else return "<span class='green'>Đánh CHẴN</span>"
+
+}
+
+function predictTaiXiu(n){
+
+let abs=Math.abs(n)
+
+/* CASE 1: >18 */
+
+if(n>17){
+
+let v=n+1
+
+if(v%2==0)
+return "<span class='red'>Đánh XỈU</span>"
+
+else
+return "<span class='green'>Đánh TÀI</span>"
+
+}
+
+/* CASE 2: < -18 */
+
+if(n<-17){
+
+let v=n-1
+
+if(v%2==0)
+return "<span class='red'>Đánh XỈU</span>"
+
+else
+return "<span class='green'>Đánh TÀI</span>"
+
+}
+
+/* CASE 3: logic bình thường */
+
+if(abs>10){
+
+if(n%2==0)
+return "<span class='green'>Đánh TÀI</span>"
+else
+return "<span class='red'>Đánh XỈU</span>"
+
+}
+
+return "<span>Chưa đủ điều kiện</span>"
+
+}
+
+function predictV2(finalResult){
+
+let session=document.getElementById("session").value
+
+if(session=="") return ""
+
+let sessionSum=session
+.split('')
+.reduce((a,b)=>a+Number(b),0)
+
+let v2=finalResult-sessionSum
+
+let resultText=""
+
+if(v2>=0){
+
+if(v2%2==1)
+resultText="TÀI LẺ"
+
+else
+resultText="XỈU CHẴN"
+
+}else{
+
+if(Math.abs(v2)%2==1)
+resultText="TÀI CHẴN"
+
+else
+resultText="XỈU LẺ"
+
+}
+
+return resultText+" ("+v2+")"
+}
+
+function updateStats(){
+
+let even=0,odd=0,tai=0,xiu=0
+
+history.forEach(n=>{
+
+if(n%2==0) even++
+else odd++
+
+if(Math.abs(n)>10) tai++
+else xiu++
+
+})
+
+let total=history.length
+
+document.getElementById("evenp").innerText=((even/total)*100).toFixed(1)
+document.getElementById("oddp").innerText=((odd/total)*100).toFixed(1)
+document.getElementById("taip").innerText=((tai/total)*100).toFixed(1)
+document.getElementById("xiup").innerText=((xiu/total)*100).toFixed(1)
+
+}
+
+</script>
+
+</body>
+</html>
